@@ -4,6 +4,33 @@ __lua__
 -- thursday game!
 -- by trolzie
 
+--[[
+
+    row -->
+    col
+    |
+    v
+
+    numbers represent each
+    type of pin you can select
+    
+    col   1  2  3  4
+
+    row11[ ][ ][ ][ ]
+         ------------
+    row10[ ][ ][ ][ ]
+    row9 [ ][ ][ ][ ]
+    row8 [ ][ ][ ][ ]
+    row7 [ ][ ][ ][ ]
+    row6 [ ][ ][ ][ ]
+    row5 [ ][ ][ ][ ]
+    row4 [ ][ ][ ][ ]
+    row3 [ ][ ][ ][ ]
+    row2 [ ][ ][ ][ ]
+    row1 [ ][ ][ ][ ]
+
+]]
+
 local score
 local game_objects
 
@@ -11,10 +38,13 @@ function _init()
     make_controls()
     -- start game with counter at zero
     score=0
+    row_count=10
+    col_count=4
     -- create game objects
     game_objects={}
     local i
     -- create some objects
+    pin_sprites={5,6,7,8}
     -- bottom border
     for i=0,15 do
         make_block(8*i,120)
@@ -28,7 +58,7 @@ function _init()
     make_pin_row(40,96,4)
 
     for_each_game_object("pin",function(pin)
-        if pin.pos==1 then
+        if pin.col==1 then
             pin.selected=true
         end
     end)
@@ -71,20 +101,20 @@ function make_controls()
             end
             if btnp(2) then
                 for_each_game_object("pin",function(pin)
-                    if pin.pos==self.current_pin then
+                    if pin.col==self.current_pin then
                         pin:change("up")
                     end
                 end)
             end
             if btnp(3) then
                 for_each_game_object("pin",function(pin)
-                    if pin.pos==self.current_pin then
+                    if pin.col==self.current_pin then
                         pin:change("down")
                     end
                 end)
             end
             for_each_game_object("pin",function(pin)
-                if pin.pos==self.current_pin then
+                if pin.col==self.current_pin then
                     pin.selected=true
                 else
                     pin.selected=false
@@ -105,35 +135,65 @@ function make_block(x,y)
     })
 end
 
-function make_pin(x,y,pos)
+function make_pin(x,y,col)
     return make_game_object("pin",x,y,{
         width=8,
         height=8,
-        pos=pos,
+        col=col,
         selected=false,
-        color=4,
+        changeing_up=0,
+        changeing_down=0,
+        change_frame_count=4,
+        number=4,
         draw=function(self)
-            spr(self.color,self.x,self.y)
+            print(self.number)
+            spr(get_sprite(self.number),self.x,self.y)
             if self.selected then
-                rect(self.x,self.y,self.x+self.width-1,self.y+self.height-1,11)
+                if self.changeing_up>0 then
+                    spr(9,self.x,self.y-6)
+                    self.changeing_up-=1
+                else
+                    spr(11,self.x,self.y-6)                    
+                end
+                if self.changeing_down>0 then
+                    spr(10,self.x,self.y+5)
+                    self.changeing_down-=1
+                else
+                    spr(12,self.x,self.y+5)
+                end
+                -- rect(self.x+1,self.y-1,self.x+self.width,self.y+self.height,7)
             end
         end,
         change=function(self,direction)
             if direction=="up" then
-                self.color=get_previous_color(self.color)
+                self.number=get_previous_number(self.number)
+                self.changeing_up=self.change_frame_count
             elseif direction=="down" then
-                self.color=get_next_color(self.color)
+                self.number=get_next_number(self.number)
+                self.changeing_down=self.change_frame_count
             end
         end
     })
 end
 
-function get_previous_color(color)
-    return color+1
+function get_sprite(number)
+    return pin_sprites[number]
 end
 
-function get_next_color(color)
-    return color-1
+function get_previous_number(number)
+    if number<=1 then
+        return col_count
+    else
+        return number-1
+    end
+end
+
+function get_next_number(number)
+    if number>=col_count then
+        return 1
+    else
+        return number+1
+    end
 end
 
 function make_pin_row(x,y,n)
@@ -183,14 +243,14 @@ function for_each_game_object(name,callback)
 end
 
 __gfx__
-00000000000000000000000077777777ffffffff7777777777777777777777777777777700000000000000000000000000000000000000000000000000000000
-0000000000c00c00000aa90076666666feeeeeee7eeeee467aaaaa367aaaaa467bbbbbd600000000000000000000000000000000000000000000000000000000
-0070070001cccc1000a7aa907677777dfefffff27e8888467abbbb367a9999467bccccd600077000000000000000000000000000000000000000000000000000
-000770000cccccc000aaaa9076766d6dfefee2e27e8888467abbbb367a9999467bccccd600777700000000000007700000000000000000000000000000000000
-000770000777777000aaaa9076766d6dfefee2e27e8888467abbbb367a9999467bccccd607777770077777700077770000777700000000000000000000000000
-007007000c8cc8c000aaaa90767ddd6dfef222e27e8888467abbbb367a9999467bccccd600000000007777000000000000077000000000000000000000000000
-0000000000cccc00000aa9007666666dfeeeeee27444444673333336744444467dddddd600000000000770000000000000000000000000000000000000000000
-0000000000000000000000007dddddddf22222227666666676666666766666667666666600000000000000000000000000000000000000000000000000000000
+00000000000000000000000077777777ffffffffeeeeeee4aaaaaaa3aaaaaaa4bbbbbbbd00000000000000000000000000000000777777770000000000000000
+0000000000c00c00000aa90076666666feeeeeeee8888884abbbbbb3a9999994bccccccd00000000000000000000000000000000700770070000000000000000
+0070070001cccc1000a7aa907677777dfefffff2e8888884abbbbbb3a9999994bccccccd00077000000000000000000000000000707007070000000000000000
+000770000cccccc000aaaa9076766d6dfefee2e2e8888884abbbbbb3a9999994bccccccd00777700000000000007700000000000700070070000000000000000
+000770000777777000aaaa9076766d6dfefee2e2e8888884abbbbbb3a9999994bccccccd07777770077777700077770000777700700700070000000000000000
+007007000c8cc8c000aaaa90767ddd6dfef222e2e8888884abbbbbb3a9999994bccccccd00000000007777000000000000077000700000070000000000000000
+0000000000cccc00000aa9007666666dfeeeeee2e8888884abbbbbb3a9999994bccccccd00000000000770000000000000000000700700070000000000000000
+0000000000000000000000007dddddddf2222222444444443333333344444444dddddddd00000000000000000000000000000000777777770000000000000000
 __sfx__
 000200000f3500f35010350113501335015350193501c350225502a7502b7502c7502d7502e7502f7502f7502f7502f75029550225501c5501355010050100500f0500f0500f0500f05010050100500f0500c050
 010400000d3620e3620e3620e3620c3620b3620f36200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
